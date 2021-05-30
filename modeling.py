@@ -25,7 +25,11 @@ import math
 import re
 import numpy as np
 import six
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
+tf.keras.backend.set_floatx('float16')
 
 
 class BertConfig(object):
@@ -90,7 +94,7 @@ class BertConfig(object):
   @classmethod
   def from_json_file(cls, json_file):
     """Constructs a `BertConfig` from a json file of parameters."""
-    with tf.gfile.GFile(json_file, "r") as reader:
+    with tf.io.gfile.GFile(json_file, "r") as reader:
       text = reader.read()
     return cls.from_dict(json.loads(text))
 
@@ -361,8 +365,7 @@ def dropout(input_tensor, dropout_prob):
 
 def layer_norm(input_tensor, name=None):
   """Run layer normalization on the last dimension of the tensor."""
-  return tf.contrib.layers.layer_norm(
-      inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+  return tf.keras.layers.LayerNormalization(axis = -1)(input_tensor)
 
 
 def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
@@ -979,7 +982,7 @@ def assert_rank(tensor, expected_rank, name=None):
 
   actual_rank = tensor.shape.ndims
   if actual_rank not in expected_rank_dict:
-    scope_name = tf.get_variable_scope().name
+    scope_name = tf.variable_scope().name
     raise ValueError(
         "For the tensor `%s` in scope `%s`, the actual rank "
         "`%d` (shape = %s) is not equal to the expected rank `%s`" %
